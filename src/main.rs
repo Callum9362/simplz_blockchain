@@ -37,6 +37,9 @@ impl Block {
 
     fn mine_block(&mut self, difficulty: usize) {
         let target = "0".repeat(difficulty);
+
+        self.hash = self.calculate_hash();
+
         while &self.hash[..difficulty] != target {
             self.nonce += 1;
             self.hash = self.calculate_hash();
@@ -95,5 +98,26 @@ fn main() {
     println!("Mining block 2...");
     blockchain.add_block("Second block data".to_owned());
 
+    if blockchain.is_valid_chain() {
+        println!("The blockchain is valid.");
+    } else {
+        println!("The blockchain is INVALID!");
+    }
+
     println!("{:#?}", blockchain);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_block_creation() {
+        let block = Block::new(1, "Test Data".to_owned(), "PreviousHash".to_owned());
+
+        assert_eq!(block.index, 1);
+        assert_eq!(block.data, "Test Data");
+        assert_eq!(block.prev_hash, "PreviousHash");
+        assert!(block.hash.starts_with("0000"));
+    }
 }
