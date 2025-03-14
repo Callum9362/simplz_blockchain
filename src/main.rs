@@ -56,10 +56,20 @@ struct Blockchain {
 impl Blockchain {
 
     fn new() -> Self {
-        let genesis_block = Block::new(0, "Genesis Block".to_owned(), String::new());
+        let genesis_block = Block {
+            index: 0,
+            timestamp: 0,
+            data: "Genesis Block".to_owned(),
+            prev_hash: String::new(),
+            hash: String::new(),
+            nonce: 0,
+        };
+        let mut genesis_block = genesis_block;
+        genesis_block.mine_block(4);
         Blockchain {
             chain: vec![genesis_block],
         }
+
     }
 
     fn latest_block(&self) -> &Block {
@@ -119,5 +129,89 @@ mod tests {
         assert_eq!(block.data, "Test Data");
         assert_eq!(block.prev_hash, "PreviousHash");
         assert!(block.hash.starts_with("0000"));
+    }
+
+    #[test]
+    fn test_blockchain_initialization() {
+        let blockchain = Blockchain::new();
+        let genesis_block = &blockchain.chain[0];
+
+        assert_eq!(blockchain.chain.len(), 1);
+        assert_eq!(genesis_block.index, 0);
+        assert_eq!(genesis_block.data, "Genesis Block");
+        assert_eq!(genesis_block.prev_hash, "");
+        assert!(genesis_block.hash.starts_with("0000"));
+    }
+
+    #[test]
+    fn test_add_block() {
+        let mut blockchain = Blockchain::new();
+
+        blockchain.add_block("First block data".to_owned());
+
+        assert_eq!(blockchain.chain.len(), 2);
+
+        let latest_block = &blockchain.chain[1];
+        let previous_block = &blockchain.chain[0];
+
+        assert_eq!(latest_block.index, 1);
+        assert_eq!(latest_block.data, "First block data");
+        assert_eq!(latest_block.prev_hash, previous_block.hash);
+        assert!(latest_block.hash.starts_with("0000"));
+    }
+
+    #[test]
+    fn test_multiple_blocks() {
+        let mut blockchain = Blockchain::new();
+
+        blockchain.add_block("Block 1 data".to_owned());
+        blockchain.add_block("Block 2 data".to_owned());
+        blockchain.add_block("Block 3 data".to_owned());
+
+        assert_eq!(blockchain.chain.len(), 4);
+        assert!(blockchain.is_valid_chain());
+    }
+
+    #[test]
+    fn test_genesis_block_consistency() {
+        let blockchain_1 = Blockchain::new();
+        let blockchain_2 = Blockchain::new();
+
+        assert_eq!(blockchain_1.chain[0].hash, blockchain_2.chain[0].hash);
+        assert_eq!(blockchain_1.chain[0].data, "Genesis Block");
+        assert_eq!(blockchain_1.chain[0].prev_hash, "");
+    }
+
+    #[test]
+    fn test_is_valid_chain() {
+        let mut blockchain = Blockchain::new();
+
+        blockchain.add_block("First block data".to_owned());
+        blockchain.add_block("Second block data".to_owned());
+
+        assert!(blockchain.is_valid_chain());
+    }
+
+    #[test]
+    fn test_tampered_block_validation() {
+        let mut blockchain = Blockchain::new();
+
+        blockchain.add_block("First block data".to_owned());
+
+        blockchain.chain[1].data = "Tampered Data".to_owned();
+
+        assert!(!blockchain.is_valid_chain());
+    }
+
+    #[test]
+    fn test_large_blockchain_performance() {
+        let mut blockchain = Blockchain::new();
+
+        for i in 1..=10 {
+            blockchain.add_block(format!("Block {} data", i));
+        }
+
+        assert_eq!(blockchain.chain.len(), 11);
+        assert!(blockchain.is_valid_chain());
     }
 }
